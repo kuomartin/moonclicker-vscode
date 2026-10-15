@@ -1,0 +1,16 @@
+.vscode/**
+.vscode-test/**
+src/**
+.gitignore
+tsconfig.json
+**/*.map
+node_modules/**
+out/**
+scripts/**
+buf.gen.yaml
+media/index.html
+media/mdns.html
+media/vscode-adapter.js
+proto/**
+.github/**
+CONTRIBUTING.md

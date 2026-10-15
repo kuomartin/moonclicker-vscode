@@ -1,0 +1,36 @@
+name: Lua stub sync
+
+# App repo 新增或刪除 Lua 函式時這裡不會收到 PR，所以每天也對 App 的 master 比對一次。
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: kuomartin/MoonClicker
+          path: app
+          sparse-checkout: engine/src/main/cpp
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run the checker's own tests
+        run: node --test .github/scripts/check-lua-stub-sync.test.mjs
+
+      - name: Check Lua API names match the stub
+        run: node .github/scripts/check-lua-stub-sync.mjs app
