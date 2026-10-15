@@ -58,12 +58,13 @@ jobs:
           retention-days: 7
 
   publish:
-    name: Publish to Open VSX
+    name: Publish to marketplaces
     needs: [build-vscode-extension]
     runs-on: ubuntu-latest
-    # 只上 Open VSX；沒設 token 時略過，GitHub release 照常建立。
+    # 各市集沒設 token 時略過該步驟，GitHub release 照常建立。
     env:
       OVSX_PAT: ${{ secrets.OVSX_PAT }}
+      VSCE_PAT: ${{ secrets.VSCE_PAT }}
 
     steps:
       - name: Download VSIX Artifact
@@ -80,6 +81,10 @@ jobs:
       - name: Publish to Open VSX
         if: env.OVSX_PAT != ''
         run: npx --yes ovsx publish release-assets/*.vsix
+
+      - name: Publish to VS Code Marketplace
+        if: env.VSCE_PAT != ''
+        run: npx --yes @vscode/vsce publish --packagePath release-assets/*.vsix
 
   create-release:
     name: Create Release
