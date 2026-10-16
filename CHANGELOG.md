@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0
+
+- REPL: a persistent Lua session in a VS Code terminal, separate from scripts; run the selection in it, interrupt, reset, or close it with Ctrl+D on an empty line.
+- Clicking the mirror taps the device and dragging swipes.
+- `MoonClicker: Copy MCP Server Config` copies the settings an AI agent needs to reach the Workbench MCP server.
+- Lua stubs for the `ui` module's view tree functions.
+
 ## 0.4.0
 
 - Several scripts can run at once; logs and data are shown per script, and Stop asks which script to stop.
