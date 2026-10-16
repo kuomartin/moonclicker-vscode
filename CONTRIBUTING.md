@@ -18,4 +18,4 @@ npm test
 
 ## 版本與發布
 
-App 與擴充套件的版本號前兩碼（x.y）相同，patch 可以不同。推 `v*` tag（或手動執行 Release workflow）會打包 `.vsix`、建 GitHub release，有設 `OVSX_PAT`、`VSCE_PAT` secret 時分別發布到 Open VSX 與 VS Code Marketplace。
+App 與擴充套件的版本號前兩碼（x.y）相同，patch 可以不同。推 `v*` tag（或手動執行 Release workflow）會打包 `.vsix`、建 GitHub release，有設 `OVSX_PAT` secret 時發布到 Open VSX；有設 `AZURE_CLIENT_ID`、`AZURE_TENANT_ID` variable 時以 Entra ID managed identity 發布到 VS Code Marketplace（`marketplace-publish` environment，Marketplace 已不建議用 PAT）。
