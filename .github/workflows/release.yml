@@ -61,7 +61,7 @@ jobs:
     name: Publish to Open VSX
     needs: [build-vscode-extension]
     runs-on: ubuntu-latest
-    # 只上 Open VSX；沒設 token 時略過，GitHub release 照常建立。
+    # 沒設 token 時略過，GitHub release 照常建立。
     env:
       OVSX_PAT: ${{ secrets.OVSX_PAT }}
 
@@ -80,6 +80,39 @@ jobs:
       - name: Publish to Open VSX
         if: env.OVSX_PAT != ''
         run: npx --yes ovsx publish release-assets/*.vsix
+
+  publish-vscode-marketplace:
+    name: Publish to VS Code Marketplace
+    needs: [build-vscode-extension]
+    # 以 Entra ID managed identity 經 OIDC 登入，不存 PAT；沒設 AZURE_CLIENT_ID 時略過。
+    if: vars.AZURE_CLIENT_ID != ''
+    runs-on: ubuntu-latest
+    environment: marketplace-publish
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Download VSIX Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: moonclicker-vscode-extension
+          path: release-assets
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+
+      - name: Publish
+        run: npx --yes @vscode/vsce publish --azure-credential --skip-duplicate --packagePath release-assets/*.vsix
 
   create-release:
     name: Create Release
