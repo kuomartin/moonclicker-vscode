@@ -85,7 +85,7 @@ jobs:
     name: Publish to VS Code Marketplace
     needs: [build-vscode-extension]
     # 以 Entra ID managed identity 經 OIDC 登入，不存 PAT；沒設 AZURE_CLIENT_ID 時略過。
-    if: vars.AZURE_CLIENT_ID != ''
+    # 判斷放在 step：job 層的 if 讀不到 environment 的 variable。
     runs-on: ubuntu-latest
     environment: marketplace-publish
     permissions:
@@ -94,17 +94,20 @@ jobs:
 
     steps:
       - name: Download VSIX Artifact
+        if: vars.AZURE_CLIENT_ID != ''
         uses: actions/download-artifact@v4
         with:
           name: moonclicker-vscode-extension
           path: release-assets
 
       - name: Set up Node.js
+        if: vars.AZURE_CLIENT_ID != ''
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
       - name: Azure login
+        if: vars.AZURE_CLIENT_ID != ''
         uses: azure/login@v2
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
@@ -112,6 +115,7 @@ jobs:
           allow-no-subscriptions: true
 
       - name: Publish
+        if: vars.AZURE_CLIENT_ID != ''
         run: npx --yes @vscode/vsce publish --azure-credential --skip-duplicate --packagePath release-assets/*.vsix
 
   create-release:
