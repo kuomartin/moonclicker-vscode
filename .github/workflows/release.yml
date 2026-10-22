@@ -3,11 +3,11 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - 'v[0-9]*'
   workflow_dispatch:
     inputs:
-      tag_name:
-        description: 'Release Tag Name'
+      version:
+        description: 'Version without the v prefix, e.g. 0.6.0. The tag is created on the dispatched commit.'
         required: true
 
 permissions:
@@ -17,21 +17,40 @@ jobs:
   build-vscode-extension:
     name: Build VS Code Extension (.vsix)
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
+      # Marketplace 與 Open VSX 上架後同一版本不能重發，所以在 build 前擋掉格式錯誤、非 master 與重複的版本。
       - name: Determine Version
         id: version
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            TAG="${{ github.event.inputs.tag_name }}"
+            if [ "${{ github.ref }}" != "refs/heads/master" ]; then
+              echo "::error::Manual releases must be dispatched from master"
+              exit 1
+            fi
+            VERSION="$INPUT_VERSION"
+            if git rev-parse -q --verify "refs/tags/v${VERSION}" >/dev/null; then
+              echo "::error::Tag v${VERSION} already exists"
+              exit 1
+            fi
           else
-            TAG="${{ github.ref_name }}"
+            VERSION="${GITHUB_REF_NAME#v}"
           fi
-          echo "tag=${TAG}" >> $GITHUB_OUTPUT
-          echo "version=${TAG#v}" >> $GITHUB_OUTPUT
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Version '${VERSION}' is not MAJOR.MINOR.PATCH"
+            exit 1
+          fi
+          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -127,15 +146,12 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Determine Tag
-        id: version
+      # 以 GITHUB_TOKEN 推送的 tag 不會再觸發本 workflow，不會重複 build
+      - name: Create Tag
+        if: github.event_name == 'workflow_dispatch'
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            TAG="${{ github.event.inputs.tag_name }}"
-          else
-            TAG="${{ github.ref_name }}"
-          fi
-          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          git tag "${{ needs.build-vscode-extension.outputs.tag }}" "$GITHUB_SHA"
+          git push origin "${{ needs.build-vscode-extension.outputs.tag }}"
 
       - name: Download VSIX Artifact
         uses: actions/download-artifact@v4
@@ -146,8 +162,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          name: ${{ steps.version.outputs.tag }}
+          tag_name: ${{ needs.build-vscode-extension.outputs.tag }}
+          name: ${{ needs.build-vscode-extension.outputs.tag }}
           draft: false
           prerelease: false
           generate_release_notes: true
