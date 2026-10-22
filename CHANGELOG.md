@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.0
+
+- Lua stubs for `vision.find_all`, `vision.wait_until` and the `options` argument of `app.launch` (MoonClicker app 0.6.0).
+
 ## 0.5.0
 
 - REPL: a persistent Lua session in a VS Code terminal, separate from scripts; run the selection in it, interrupt, reset, or close it with Ctrl+D on an empty line.
