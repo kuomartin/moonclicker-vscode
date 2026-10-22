@@ -94,6 +94,13 @@ function vision.find(request) end
 ---@return moonclicker.VisionHit? hit 命中結果，找不到為 `nil`
 function vision.find_any(requests) end
 
+--- 對目前最新的影格找出所有命中，不等待；依 `confidence` 由高到低，第一個就是 `vision.find` 的結果，最多 100 個，沒有命中回傳空陣列。
+--- 模板：彼此重疊超過模板一半的只留最像的那個。文字：每一行最多一個，取該行最像的那一段。
+---@param request moonclicker.VisionRequest|string 完整的 request 物件或圖片路徑字串簡寫
+---@return moonclicker.VisionHit[] hits
+---@overload fun(image: string): moonclicker.VisionHit[]
+function vision.find_all(request) end
+
 --- 等到出現為止，逾時回傳 `nil`。
 ---@param request moonclicker.VisionRequest|string 完整的 request 物件或圖片路徑字串簡寫
 ---@param timeout_ms integer? 逾時毫秒數，選填，預設 10000
@@ -109,6 +116,16 @@ function vision.wait(request, timeout_ms, step_ms) end
 ---@return integer? index 1-based 索引，逾時為 `nil`
 ---@return moonclicker.VisionHit? hit 命中結果，逾時為 `nil`
 function vision.wait_any(requests, timeout_ms, step_ms) end
+
+--- 每張新影格呼叫一次 `fn`，回傳它第一個不是 `nil`、`false` 的值；逾時回傳 `nil`。`fn` 拋的錯照常往外拋。
+--- `fn` 執行期間影格固定：裡面的 `vision.find`、`find_all`、`read`、`read_lines` 都看同一張畫面，同一個 `roi` 的文字辨識只做一次。
+--- `fn` 裡呼叫 `vision.wait`、`wait_any`、`wait_until` 會報錯，因為影格固定時等不到新影格；`fn` 應該只做判斷，不要 `sleep` 或 `input.*`。
+---@generic T
+---@param fn fun(): T 判斷條件，回傳 `nil` 或 `false` 代表繼續等
+---@param timeout_ms integer? 逾時毫秒數，選填，預設 10000
+---@param step_ms integer? 兩次呼叫 `fn` 開始的最小間隔（毫秒），選填，預設 0（每張新影格都呼叫）
+---@return T? value `fn` 第一個 truthy 的回傳值，逾時為 `nil`
+function vision.wait_until(fn, timeout_ms, step_ms) end
 
 --- 把 `roi` 當成單一文字行直接辨識（不經偵測），讀數值用；辨識不出任何字回傳 `nil`。只看最新影格，不等待。
 ---@param roi moonclicker.VisionRoi 要讀的區域（邏輯座標），框緊一點，避免把邊框讀成字
@@ -186,10 +203,14 @@ function input.recents() end
 ---@class moonclicker.App
 app = {}
 
+---@class moonclicker.AppLaunchOptions
+---@field exclude_from_recents boolean? 為 `true` 時 app 不出現在最近使用畫面，預設 false。只在這次啟動建立新的 task 時有效；app 已經有 task（例如開在主螢幕）時沿用原本的 task，最近使用畫面照舊列出它
+
 --- 在目標顯示器上啟動 app。目標是虛擬顯示器、但裝置不支援在次要顯示器上執行 app 時拋錯。
 ---@param package_name string 應用程式套件名稱（Package Name）
+---@param options moonclicker.AppLaunchOptions? 選填
 ---@return boolean ok 是否成功發送啟動請求；app 未安裝或沒有可啟動的畫面時為 false
-function app.launch(package_name) end
+function app.launch(package_name, options) end
 
 ---@class moonclicker.AppTask
 -- `package` 也是 LuaLS 的可見性修飾字，不先寫 `public` 會被吃掉，欄位名變成 `string`。
