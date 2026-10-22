@@ -18,4 +18,4 @@ npm test
 
 ## 版本與發布
 
-App 與擴充套件的版本號前兩碼（x.y）相同，patch 可以不同。推 `v*` tag（或手動執行 Release workflow）會打包 `.vsix`、建 GitHub release，有設 `OVSX_PAT` secret 時發布到 Open VSX；有設 `AZURE_CLIENT_ID`、`AZURE_TENANT_ID` variable 時以 Entra ID managed identity 發布到 VS Code Marketplace（`marketplace-publish` environment，Marketplace 已不建議用 PAT）。
+App 與擴充套件的版本號前兩碼（x.y）相同，patch 可以不同。從 master 手動執行 Release workflow 並輸入版本號（例如 `0.6.0`），或推 `v` 開頭的版本 tag，會打包 `.vsix`、建 GitHub release，有設 `OVSX_PAT` secret 時發布到 Open VSX；有設 `AZURE_CLIENT_ID`、`AZURE_TENANT_ID` variable 時以 Entra ID managed identity 發布到 VS Code Marketplace（`marketplace-publish` environment，Marketplace 已不建議用 PAT）。手動執行時 workflow 先檢查版本格式為 `MAJOR.MINOR.PATCH`、tag 尚不存在，build 成功後才在該 commit 上建立 tag；上架後同一版本不能重發，所以檢查放在 build 之前。
